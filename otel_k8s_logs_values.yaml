@@ -1,0 +1,33 @@
+mode: daemonset
+
+image:
+  repository: otel/opentelemetry-collector-k8s
+  tag: '0.165.0'
+
+extraEnvsFrom:
+  - secretRef:
+      name: otel-cloud-dev
+
+presets:
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: false
+
+config:
+  extensions:
+    basicauth:
+      client_auth: 
+        username: "${env:LOGS_LOGS_USERNAME}"
+        password: "${env:LOGS_LOGS_PASSWORD}"
+  exporters:
+    otlp_http:
+      endpoint: "${env:LOGS_LOKI_ENDPOINT}"
+      auth:
+        authenticator: basicauth
+  service:
+    extensions: [basicauth, health_check]
+    pipelines:
+      logs:
+        exporters:
+          - otlp_http
+

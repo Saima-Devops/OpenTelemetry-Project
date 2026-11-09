@@ -1,0 +1,61 @@
+mode: deployment
+
+image:
+  repository: otel/opentelemetry-collector-k8s
+  tag: '0.165.0'
+
+extraEnvsFrom:
+  - secretRef:
+      name: otel-cloud-dev
+
+presets:
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: false
+
+
+config:
+  receivers:
+    prometheus:
+      config:
+        scrape_configs:
+        - job_name: 'otel-node-exporter'
+          scrape_interval: 10s
+          static_configs:
+          - targets: ['10.43.98.180:9100']
+
+  extensions:
+    basicauth:
+      client_auth: 
+        username: "${env:SIGNALS_LOGS_USERNAME}"
+        password: "${env:SIGNALS_LOGS_PASSWORD}"
+    basicauth/2:
+      client_auth: 
+        username: "${env:SIGNALS_METRICS_USERNAME}"
+        password: "${env:SIGNALS_METRICS_PASSWORD}"
+  exporters:
+    otlp_grpc:
+      endpoint: "${env:SIGNALS_TEMPO_ENDPOINT}"
+      headers:
+          authorization: "${env:SIGNALS_TEMPO_AUTHORIZATION}"
+    otlp_http:
+      endpoint: "${env:SIGNALS_LOKI_ENDPOINT}"
+      auth:
+        authenticator: basicauth
+    otlp_http/2:
+      endpoint: "${env:SIGNALS_PROMETHEUS_ENDPOINT}"
+      auth:
+        authenticator: basicauth/2
+
+  service:
+      extensions: [basicauth,basicauth/2,health_check]
+      pipelines:
+        traces:
+          exporters:
+            - otlp_grpc
+        logs:
+          exporters:
+            - otlp_http
+        metrics:
+          exporters:
+            - otlp_http/2

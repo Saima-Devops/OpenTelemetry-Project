@@ -1,0 +1,10 @@
+server:
+  extraArgs:
+    web.config.file: /etc/prometheus-web/web.yml
+  extraFlags:
+    - web.enable-remote-write-receiver
+  extraSecretMounts:
+    - name: prometheus-web
+      mountPath: /etc/prometheus-web
+      secretName: prometheus-dev
+      readOnly: true

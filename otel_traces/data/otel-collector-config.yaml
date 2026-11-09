@@ -1,0 +1,32 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      
+processors:
+  batch:
+
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp_grpc:
+    endpoint: "${env:TRACES_TEMPO_ENDPOINT}"
+    headers:
+        authorization: "${env:TRACES_TEMPO_AUTHORIZATION}"
+    
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp_grpc]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug]
